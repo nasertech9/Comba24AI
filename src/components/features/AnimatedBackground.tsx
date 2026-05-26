@@ -1,25 +1,8 @@
 import { useEffect, useRef } from "react";
 
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  opacity: number;
-  color: string;
-}
-
-interface Connection {
-  p1: Particle;
-  p2: Particle;
-  distance: number;
-}
-
 export default function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
-  const particlesRef = useRef<Particle[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -36,24 +19,27 @@ export default function AnimatedBackground() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Initialize particles
-    const PARTICLE_COUNT = Math.min(Math.floor(window.innerWidth / 15), 80);
-    particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () => ({
+    const hexToRgba = (hex: string, a: number) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${a})`;
+    };
+
+    const COUNT = Math.min(Math.floor(window.innerWidth / 15), 70);
+    const particles = Array.from({ length: COUNT }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       vx: (Math.random() - 0.5) * 0.4,
       vy: (Math.random() - 0.5) * 0.4,
-      radius: Math.random() * 2 + 0.5,
-      opacity: Math.random() * 0.6 + 0.2,
+      radius: Math.random() * 1.5 + 0.5,
+      opacity: Math.random() * 0.5 + 0.2,
       color: colors[Math.floor(Math.random() * colors.length)],
     }));
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const particles = particlesRef.current;
-
-      // Update positions
       particles.forEach((p) => {
         p.x += p.vx;
         p.y += p.vy;
@@ -61,51 +47,26 @@ export default function AnimatedBackground() {
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
       });
 
-      // Draw connections
-      const connections: Connection[] = [];
+      // Connections
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 140) {
-            connections.push({ p1: particles[i], p2: particles[j], distance: dist });
+          if (dist < 130) {
+            const alpha = (1 - dist / 130) * 0.25;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = hexToRgba(particles[i].color, alpha);
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
           }
         }
       }
 
-      connections.forEach(({ p1, p2, distance }) => {
-        const alpha = (1 - distance / 140) * 0.3;
-        const gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
-        gradient.addColorStop(0, p1.color.replace(")", `, ${alpha})`).replace("rgb", "rgba").replace("#", "rgba(").replace(/^rgba\(([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2}), /, (_, r, g, b) => `rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)}, `));
-
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-
-        // Use a simple approach for line color
-        const hexToRgba = (hex: string, a: number) => {
-          const r = parseInt(hex.slice(1, 3), 16);
-          const g = parseInt(hex.slice(3, 5), 16);
-          const b = parseInt(hex.slice(5, 7), 16);
-          return `rgba(${r},${g},${b},${a})`;
-        };
-
-        ctx.strokeStyle = hexToRgba(p1.color, alpha);
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-      });
-
-      // Draw particles
+      // Dots
       particles.forEach((p) => {
-        const hexToRgba = (hex: string, a: number) => {
-          const r = parseInt(hex.slice(1, 3), 16);
-          const g = parseInt(hex.slice(3, 5), 16);
-          const b = parseInt(hex.slice(5, 7), 16);
-          return `rgba(${r},${g},${b},${a})`;
-        };
-
-        // Glow
         const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 4);
         grd.addColorStop(0, hexToRgba(p.color, p.opacity));
         grd.addColorStop(1, hexToRgba(p.color, 0));
@@ -114,7 +75,6 @@ export default function AnimatedBackground() {
         ctx.fillStyle = grd;
         ctx.fill();
 
-        // Core dot
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fillStyle = hexToRgba(p.color, p.opacity);
@@ -135,14 +95,15 @@ export default function AnimatedBackground() {
   return (
     <canvas
       ref={canvasRef}
-      id="neural-canvas"
       style={{
         position: "fixed",
         top: 0,
         left: 0,
+        width: "100%",
+        height: "100%",
         pointerEvents: "none",
         zIndex: 0,
-        opacity: 0.6,
+        opacity: 0.55,
       }}
     />
   );

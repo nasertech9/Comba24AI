@@ -20,8 +20,11 @@ function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Fixed neural background behind everything */}
       <AnimatedBackground />
-      <div className="relative z-10">
+
+      {/* All page content sits above the canvas */}
+      <div style={{ position: "relative", zIndex: 10 }}>
         <Toaster
           theme="dark"
           toastOptions={{

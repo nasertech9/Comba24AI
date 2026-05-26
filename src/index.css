@@ -35,12 +35,19 @@
 
   html {
     scroll-behavior: smooth;
+    background-color: #08080f;
   }
 
   body {
-    @apply bg-brand-black text-foreground;
+    background-color: #08080f;
+    color: #f2f2f5;
     font-family: "Inter", sans-serif;
     overflow-x: hidden;
+  }
+
+  #root {
+    background-color: #08080f;
+    min-height: 100vh;
   }
 
   ::-webkit-scrollbar {
